@@ -44,7 +44,26 @@ class PDFKit
 
     args << (path || '-') # Write to file or stdout
 
-    args.shelljoin
+    sanitize(args).join(' ')
+  end
+
+  def sanitize(args)
+    args.map do |arg|
+      if backbone_url?(arg) then
+        sanitize_backbone_url(arg)
+      else
+        arg.shellescape
+      end
+    end
+  end
+
+  def backbone_url?(arg)
+    @source.url? && arg.include?("#") && arg.split("#").length == 2
+  end
+
+  def sanitize_backbone_url(url)
+    urlParts = arg.split("#")
+    "#{urlParts[0].shellescape}##{urlParts[1].shellescape}"
   end
 
   def executable
