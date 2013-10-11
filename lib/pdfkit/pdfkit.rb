@@ -62,7 +62,7 @@ class PDFKit
   end
 
   def sanitize_backbone_url(url)
-    urlParts = arg.split("#")
+    urlParts = url.split("#")
     "#{urlParts[0].shellescape}##{urlParts[1].shellescape}"
   end
 
