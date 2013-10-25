@@ -1,4 +1,5 @@
 require 'shellwords'
+require 'open3'
 
 class PDFKit
 
@@ -81,15 +82,16 @@ class PDFKit
 
     invoke = command(path)
 
-    result = IO.popen(invoke, "wb+") do |pdf|
-      pdf.puts(@source.to_s) if @source.html?
-      pdf.close_write
-      pdf.gets(nil)
-    end
+    result, error_output, exit_status =
+      Open3.popen3(invoke) do |stdin, stdout, stderr, wait_thr|
+        stdin.puts(@source.to_s) if @source.html?
+        stdin.close_write
+        [ stdout.binmode.read, stderr.read, wait_thr.value ]
+      end
     result = File.read(path) if path
 
     # $? is thread safe per http://stackoverflow.com/questions/2164887/thread-safe-external-process-in-ruby-plus-checking-exitstatus
-    raise "command failed: #{invoke}" if result.to_s.strip.empty? or !$?.success?
+    raise "command failed: #{invoke}, error: #{error_output}" if result.to_s.strip.empty? or !exit_status.success?
     return result
   end
 

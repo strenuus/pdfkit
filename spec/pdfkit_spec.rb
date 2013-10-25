@@ -207,6 +207,25 @@ describe PDFKit do
       pdfkit = PDFKit.new("http://google.com/this-should-not-be-found/404.html")
       lambda { pdfkit.to_pdf }.should raise_error
     end
+
+    it "should contain error output if bad URL" do
+      pdfkit = PDFKit.new("httx://google.com/")
+      begin
+        pdfkit.to_pdf
+      rescue => ex
+        ex.message.should include("Error: Failed loading page")
+      end
+    end
+
+    it "should contain error output if bad command" do
+      pdfkit = PDFKit.new("http://google.com/")
+      pdfkit.stub(:command) { 'bogus_command' }
+      begin
+        pdfkit.to_pdf
+      rescue => ex
+        ex.message.should include("No such file or directory")
+      end
+    end
   end
 
   context "#to_file" do
@@ -230,7 +249,7 @@ describe PDFKit do
       file_path = File.join(SPEC_ROOT,'fixtures','example.html')
       pdfkit = PDFKit.new(File.new(file_path))
       pdf_data = pdfkit.to_pdf
-      file = pdfkit.to_file(@file_path)
+      pdfkit.to_file(@file_path)
       file_data = open(@file_path, 'rb') {|io| io.read }
       pdf_data.size.should == file_data.size
     end
