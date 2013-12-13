@@ -88,11 +88,11 @@ class PDFKit
         stdin.close_write
         [ stdout.binmode.read, stderr.read, wait_thr.value ]
       end
-    result = File.read(path) if path
+    result = File.read(path) if path && File.exists?(path)
 
     # $? is thread safe per http://stackoverflow.com/questions/2164887/thread-safe-external-process-in-ruby-plus-checking-exitstatus
-    raise "command failed: #{invoke}, error: #{error_output}" if result.to_s.strip.empty? or !exit_status.success?
-    return result
+    raise_process_failure(invoke, exit_status, error_output) if result.nil? or result.to_s.strip.empty? or !exit_status.success?
+    result
   end
 
   def to_file(path)
@@ -161,4 +161,7 @@ class PDFKit
       end
     end
 
+    def raise_process_failure(invoke, exit_status, error_output)
+      raise "command failed: #{invoke}, exit code: #{exit_status.exitstatus}, error: #{error_output}"
+    end
 end

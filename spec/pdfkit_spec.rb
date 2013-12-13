@@ -98,7 +98,7 @@ describe PDFKit do
       pdfkit.command.should match /#{file_path} -$/
     end
 
-    it "should specify the path for the ouput if a apth is given" do
+    it "should specify the path for the ouput if a path is given" do
       file_path = "/path/to/output.pdf"
       pdfkit = PDFKit.new("html")
       pdfkit.command(file_path).should match /#{file_path}$/
@@ -192,7 +192,7 @@ describe PDFKit do
       pdfkit = PDFKit.new('http://google.com')
       css = File.join(SPEC_ROOT,'fixtures','example.css')
       pdfkit.stylesheets << css
-      lambda { pdfkit.to_pdf }.should raise_error(PDFKit::ImproperSourceError)
+      expect { pdfkit.to_pdf }.to raise_error(PDFKit::ImproperSourceError)
     end
 
     it "should be able to deal with ActiveSupport::SafeBuffer" do
@@ -205,26 +205,23 @@ describe PDFKit do
 
     it "should throw an error if it is unable to connect" do
       pdfkit = PDFKit.new("http://google.com/this-should-not-be-found/404.html")
-      lambda { pdfkit.to_pdf }.should raise_error
+      expect { pdfkit.to_pdf }.to raise_error(RuntimeError, /Exit with code 2 due to http error: 404 Page not found/)
     end
 
     it "should contain error output if bad URL" do
-      pdfkit = PDFKit.new("httx://google.com/")
-      begin
-        pdfkit.to_pdf
-      rescue => ex
-        ex.message.should include("Error: Failed loading page")
-      end
+      pdfkit = PDFKit.new("httpx://google.com/")
+      expect { pdfkit.to_pdf }.to raise_error(RuntimeError, /Error: Failed loading page/)
     end
 
     it "should contain error output if bad command" do
       pdfkit = PDFKit.new("http://google.com/")
       pdfkit.stub(:command) { 'bogus_command' }
-      begin
-        pdfkit.to_pdf
-      rescue => ex
-        ex.message.should include("No such file or directory")
-      end
+      expect { pdfkit.to_pdf }.to raise_error(Errno::ENOENT, /No such file or directory - bogus_command/)
+    end
+
+    it "should show exit code" do
+      pdfkit = PDFKit.new("httpx://google.com/")
+      expect { pdfkit.to_pdf }.to raise_error(RuntimeError, /exit code: 1,/)
     end
   end
 
@@ -235,7 +232,7 @@ describe PDFKit do
     end
 
     after do
-      File.delete(@file_path)
+      File.delete(@file_path) if File.exists?(@file_path)
     end
 
     it "should create a file with the PDF as content" do
